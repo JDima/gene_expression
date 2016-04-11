@@ -97,7 +97,7 @@ class ModelPSC:
                 offState = getOffState(core, tf_prob[0], site)
 
                 desc = "unbinding_core_{0}_tf_{1}_site_{2}".format(str(core), tf_prob[0],  str(site))
-                rate = "{0} * {1} * {2}".format(str(tf_prob[1]), onState, bindedN)
+                rate = "{0} * {1} * {2}".format(str(1 - tf_prob[1]), onState, bindedN)
 
                 if tf_prob[0] == "bcd" or tf_prob[0] == "cad":
                     reactants = { bindedN : '1', onState : '1'}
@@ -116,22 +116,30 @@ class ModelPSC:
         return species, sites, states
 
     def add_transription_start(self, root, sites):
-        rate = " * ".join(sites)
         desc = "Transcription start"
 
-        self.add_reaction(root, self.reaction_id, desc, rate, {}, {'mRNA' : '1'})
+        for core in range(self.count_core):
+            site_by_core = []
+            for site in sites:
+                if 'core' + str(core) in site:
+                    site_by_core.append(site)
+            rate = " * ".join(site_by_core)
+            self.add_reaction(root, self.reaction_id, desc, rate, {}, {'mRNA' + str(core) : '1'})
 
     def add_translation_reaction(self, root):
         desc = "Translation"
-        self.add_reaction(root, self.reaction_id, desc, 'mRNA * translation', {'mRNA' : '1'}, {'Nprotein' : '1'})
+        for core in range(self.count_core):
+            self.add_reaction(root, self.reaction_id, desc, 'mRNA' + str(core) + ' * translation', {'mRNA' + str(core) : '1'}, {'Nprotein' + str(core) : '1'})
 
     def add_degradation_mRNA_reaction(self, root):
         desc = "Degradation mRNA"
-        self.add_reaction(root, self.reaction_id, desc, 'mRNA * mRNA_degrad', {'mRNA' : '1'}, {})
+        for core in range(self.count_core):
+            self.add_reaction(root, self.reaction_id, desc, 'mRNA' + str(core) + ' * mRNA_degrad', {'mRNA' + str(core) : '1'}, {})
 
     def add_degradation_protein_reaction(self, root):
         desc = "Degradation protein"
-        self.add_reaction(root, self.reaction_id, desc, 'Nprotein * Protein_degrad', {'Nprotein' : '1'}, {})
+        for core in range(self.count_core):
+            self.add_reaction(root, self.reaction_id, desc, 'Nprotein' + str(core) + ' * Protein_degrad', {'Nprotein' + str(core) : '1'}, {})
 
     def add_reactions(self):
         pl_root = etree.Element('ReactionsList')
@@ -178,10 +186,11 @@ class ModelPSC:
         for site in sites:
             self.add_specie(sl_root, site, site, 2)
 
-        self.add_specie(sl_root, 'mRNA', 'mRNA', 0.0)
-        self.add_specie(sl_root, 'Nprotein', 'Nprotein', 0.0)
+        for core in range(self.count_core):
+            self.add_specie(sl_root, 'mRNA' + str(core), 'mRNA' + str(core), 0.0)
+            self.add_specie(sl_root, 'Nprotein' + str(core), 'Nprotein' + str(core), 0.0)
 
-        return len(states) + len(species) + len(sites) + 2, sl_root
+        return len(states) + len(species) + len(sites) + 2 * self.count_core, sl_root
 
 
     def create_model(self):

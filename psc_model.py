@@ -5,19 +5,24 @@ from lxml import etree
 tfs = ["hb", "Kr", "gt", "kni", "bcd", "cad", "tll", "hkb"]
 
 def getSite(core, tf, site):
+    # return "site{0}core{1}".format(site, core)
     return "site{0}core{1}tf{2}".format(site, core, tf)
 
 def getBinded(core, tf, site):
-    return "NbindedCore{0}tf{1}site{2}".format(str(core), tf, str(site))
+    return "NbindedCore{0}tf{1}".format(str(core), tf)
+    # return "NbindedCore{0}tf{1}site{2}".format(str(core), tf, str(site))
 
 def getFree(core, tf, site):
-    return "NfreeCore{0}tf{1}site{2}".format(str(core), tf, str(site))
+    return "NfreeCore{0}tf{1}".format(str(core), tf)
+    # return "NfreeCore{0}tf{1}site{2}".format(str(core), tf, str(site))
 
 def getOnState(core, tf, site):
     return "OnStateCore{0}tf{1}site{2}".format(str(core), tf, str(site))
+    # return "OnStateCore{0}site{1}".format(str(core), str(site))
 
 def getOffState(core, tf, site):
     return "OffStateCore{0}tf{1}site{2}".format(str(core), tf, str(site))
+    # return "OffStateCore{0}site{1}".format(str(core), str(site))
 
 
 class ModelPSC:
@@ -85,9 +90,9 @@ class ModelPSC:
 
 
     def add_unbinding_reactions(self, root):
-        species = []
-        sites = []
-        states = []
+        species = set()
+        sites = set()
+        states = set()
         for core in range(self.count_core):
             for site, tf_prob in enumerate(self.tf_probs):
                 freeN = getFree(core, tf_prob[0], site)
@@ -108,11 +113,11 @@ class ModelPSC:
 
                 self.add_reaction(root, self.reaction_id, desc, rate, reactants, products)
 
-                species.append(freeN)
-                species.append(bindedN)
-                sites.append(siteVar)
-                states.append(offState)
-                states.append(onState)
+                species.add(freeN)
+                species.add(bindedN)
+                sites.add(siteVar)
+                states.add(offState)
+                states.add(onState)
         return species, sites, states
 
     def add_transription_start(self, root, sites):
@@ -217,9 +222,9 @@ def prob_tf(file):
 
 tf_prob = prob_tf("sitesDR.ann")
 
-tf_prob = tf_prob[:2]
+tf_prob = tf_prob[:10]
 
-model = ModelPSC(2, tfs, tf_prob)
+model = ModelPSC(10, tfs, tf_prob)
 doc = model.create_model()
 
 

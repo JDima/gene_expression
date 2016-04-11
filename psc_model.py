@@ -8,11 +8,11 @@ def getSite(core, tf, site):
     # return "site{0}core{1}".format(site, core)
     return "site{0}core{1}tf{2}".format(site, core, tf)
 
-def getBinded(core, tf, site):
+def getBinded(core, tf, site = ""):
     return "NbindedCore{0}tf{1}".format(str(core), tf)
     # return "NbindedCore{0}tf{1}site{2}".format(str(core), tf, str(site))
 
-def getFree(core, tf, site):
+def getFree(core, tf, site = ""):
     return "NfreeCore{0}tf{1}".format(str(core), tf)
     # return "NfreeCore{0}tf{1}site{2}".format(str(core), tf, str(site))
 
@@ -35,7 +35,7 @@ class ModelPSC:
         return child
 
 
-    def __init__(self, count_сore, transciption_factors, tf_probs):
+    def __init__(self, count_сore, transciption_factors, tf_probs, diffuse, h_dist):
         self.count_core = count_сore
         self.transcipton_factors = transciption_factors
         self.tf_probs = tf_probs
@@ -43,6 +43,10 @@ class ModelPSC:
         self.model = etree.Element('Model')
         self.add_child(self.model, 'Description', 'Gene expression')
         self.reaction_id = 1
+
+        self.diffuse = diffuse
+        self.h_dist = h_dist
+        self.trans_start = 0.1
 
     def add_reaction(self, root, id, description, rate, reactants, products, type = 'customized'):
         reaction = self.add_child(root, 'Reaction')
@@ -128,6 +132,7 @@ class ModelPSC:
             for site in sites:
                 if 'core' + str(core) in site:
                     site_by_core.append(site)
+            site_by_core.append(str(self.trans_start))
             rate = " * ".join(site_by_core)
             self.add_reaction(root, self.reaction_id, desc, rate, {}, {'mRNA' + str(core) : '1'})
 
@@ -146,6 +151,46 @@ class ModelPSC:
         for core in range(self.count_core):
             self.add_reaction(root, self.reaction_id, desc, 'Nprotein' + str(core) + ' * Protein_degrad', {'Nprotein' + str(core) : '1'}, {})
 
+
+
+
+    def add_diff_reaction(self, root, desc, fromP, toP):
+        dconst = str(self.diffuse / self.h_dist)
+        self.add_reaction(root, self.reaction_id,
+                          desc, dconst + ' * (' + fromP + ' - ' + toP + ')' + ' * (' + fromP + ' - ' + toP + ')',
+                          {fromP : '1'}, {toP : '1'})
+
+    def add_diffusion_reaction(self, root):
+        if self.count_core == 1:
+          return
+
+        dconst = self.diffuse / self.h_dist
+
+        tfs = { tf for tf, prob in self.tf_probs}
+
+        for tf in tfs:
+            freeLeft = getFree(0, tf)
+            freeLeftNeighbour = getFree(1, tf)
+            self.add_diff_reaction(root,  "diffusionToRight" + tf + "core" + str(0), freeLeft, freeLeftNeighbour)
+
+            freeRight = getFree(self.count_core - 1, tf)
+            freeRightNeighbour = getFree(self.count_core - 2, tf)
+            self.add_diff_reaction(root,  "diffusionToLeft" + tf + "core" + str(self.count_core - 1), freeRight, freeRightNeighbour)
+
+        if self.count_core == 2:
+            return
+
+        for core in range(1, self.count_core - 1):
+            for tf in tfs:
+                freeN = getFree(core, tf)
+                freeNLeft = getFree(core - 1, tf)
+                freeNRight = getFree(core + 1, tf)
+
+                self.add_diff_reaction(root,  "diffusionToRight" + tf + "core" + str(core), freeN, freeNRight)
+                self.add_diff_reaction(root,  "diffusionToLeft" + tf + "core" + str(core), freeN, freeNLeft)
+
+
+
     def add_reactions(self):
         pl_root = etree.Element('ReactionsList')
         self.add_binding_reactions(pl_root)
@@ -154,6 +199,7 @@ class ModelPSC:
         self.add_translation_reaction(pl_root)
         self.add_degradation_mRNA_reaction(pl_root)
         self.add_degradation_protein_reaction(pl_root)
+        self.add_diffusion_reaction(pl_root)
         return species, sites, states, pl_root
 
     def add_parametr(self, pl_root, key, value):
@@ -167,7 +213,7 @@ class ModelPSC:
     def add_parameters_list(self, species, sites, states):
         pl_root = etree.Element('ParametersList')
 
-        parametrs = {'translation' : 0.2, 'mRNA_degrad' : 0.2, 'Protein_degrad' : 0.2}
+        parametrs = {'translation' : 0.2, 'mRNA_degrad' : 0.2, 'Protein_degrad' : 0.2, 'Transcription_start' : self.trans_start}
         for key in parametrs.keys():
             self.add_parametr(pl_root, key, parametrs[key])
 
@@ -222,9 +268,9 @@ def prob_tf(file):
 
 tf_prob = prob_tf("sitesDR.ann")
 
-tf_prob = tf_prob[:10]
+tf_prob = tf_prob[:1]
 
-model = ModelPSC(10, tfs, tf_prob)
+model = ModelPSC(3, tfs, tf_prob, 0.002, 10000)
 doc = model.create_model()
 
 

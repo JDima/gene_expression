@@ -5,19 +5,19 @@ from lxml import etree
 tfs = ["hb", "Kr", "gt", "kni", "bcd", "cad", "tll", "hkb"]
 
 def getSite(core, tf, site):
-    return "site_{0}_core_{1}_tf_{2}".format(site, core, tf)
+    return "site{0}core{1}tf{2}".format(site, core, tf)
 
 def getBinded(core, tf, site):
-    return "N_binded_core_{0}_tf_{1}_site_{2}".format(str(core), tf, str(site))
+    return "NbindedCore{0}tf{1}site{2}".format(str(core), tf, str(site))
 
 def getFree(core, tf, site):
-    return "N_free_core_{0}_tf_{1}_site_{2}".format(str(core), tf, str(site))
+    return "NfreeCore{0}tf{1}site{2}".format(str(core), tf, str(site))
 
 def getOnState(core, tf, site):
-    return "OnState_core_{0}_tf_{1}_site_{2}".format(str(core), tf, str(site))
+    return "OnStateCore{0}tf{1}site{2}".format(str(core), tf, str(site))
 
 def getOffState(core, tf, site):
-    return "OffState_core_{0}_tf_{1}_site_{2}".format(str(core), tf, str(site))
+    return "OffStateCore{0}tf{1}site{2}".format(str(core), tf, str(site))
 
 
 class ModelPSC:
@@ -39,29 +39,12 @@ class ModelPSC:
         self.add_child(self.model, 'Description', 'Gene expression')
         self.reaction_id = 1
 
-    def add_parametr(self, pl_root, key, value):
-        parameter = self.add_child(pl_root, 'Parameter')
-        id = etree.Element('id')
-        id.text = key
-        expression = etree.Element('Expression')
-        expression.text = str(value)
-        parameter.extend([id, expression])
-
-    def add_parameters_list(self):
-        pl_root = etree.Element('ParametersList')
-        parametrs = {'translation' : 0.6, 'mRNA_degrad' : 0.02, 'Protein_degrad' : 0.02}
-        for key in parametrs.keys():
-            self.add_parametr(pl_root, key, parametrs[key])
-        return pl_root
-
-
-
-    def add_reaction(self, root, id, description, rate, reactants, products, type = 'mass-action'):
+    def add_reaction(self, root, id, description, rate, reactants, products, type = 'customized'):
         reaction = self.add_child(root, 'Reaction')
         self.add_child(reaction, 'Id', id)
         self.add_child(reaction, 'Description', description)
         self.add_child(reaction, 'Type', type)
-        self.add_child(reaction, 'Rate', rate)
+        self.add_child(reaction, 'PropensityFunction', rate)
 
         if reactants:
             ereactants = self.add_child(reaction, 'Reactants')
@@ -87,14 +70,14 @@ class ModelPSC:
                 offState = getOffState(core, tf_prob[0], site)
 
                 desc = "binding_core_{0}_tf_{1}_site_{2}".format(str(core), tf_prob[0],  str(site))
-                rate = "{0} * {1} * {2}".format(str(tf_prob[1]), onState, offState)
+                rate = "{0} * {1} * {2}".format(str(tf_prob[1]), offState, freeN)
 
                 if tf_prob[0] == "bcd" or tf_prob[0] == "cad":
-                    reactants = { freeN : '1', siteVar :  '0.3', offState : '1'}
+                    reactants = { freeN : '1', siteVar :  '1', offState : '1'}
                     products = { bindedN :  '1', onState : '1'}
                 else:
                     reactants = { freeN : '1', offState : '1'}
-                    products = { bindedN :  '1', onState : '1', siteVar :  '0.3'}
+                    products = { bindedN :  '1', onState : '1', siteVar :  '1'}
 
                 self.add_reaction(root, self.reaction_id, desc, rate, reactants, products)
 
@@ -114,7 +97,7 @@ class ModelPSC:
                 offState = getOffState(core, tf_prob[0], site)
 
                 desc = "unbinding_core_{0}_tf_{1}_site_{2}".format(str(core), tf_prob[0],  str(site))
-                rate = "{0} * {1} * {2}".format(str(tf_prob[1]), onState, offState)
+                rate = "{0} * {1} * {2}".format(str(tf_prob[1]), onState, bindedN)
 
                 if tf_prob[0] == "bcd" or tf_prob[0] == "cad":
                     reactants = { bindedN : '1', onState : '1'}
@@ -147,7 +130,7 @@ class ModelPSC:
         self.add_reaction(root, self.reaction_id, desc, 'mRNA * mRNA_degrad', {'mRNA' : '1'}, {})
 
     def add_degradation_protein_reaction(self, root):
-        desc = "Degradation mRNA"
+        desc = "Degradation protein"
         self.add_reaction(root, self.reaction_id, desc, 'Nprotein * Protein_degrad', {'Nprotein' : '1'}, {})
 
     def add_reactions(self):
@@ -160,6 +143,23 @@ class ModelPSC:
         self.add_degradation_protein_reaction(pl_root)
         return species, sites, states, pl_root
 
+    def add_parametr(self, pl_root, key, value):
+        parameter = self.add_child(pl_root, 'Parameter')
+        id = etree.Element('id')
+        id.text = key
+        expression = etree.Element('Expression')
+        expression.text = str(value)
+        parameter.extend([id, expression])
+
+    def add_parameters_list(self, species, sites, states):
+        pl_root = etree.Element('ParametersList')
+
+        parametrs = {'translation' : 0.2, 'mRNA_degrad' : 0.2, 'Protein_degrad' : 0.2}
+        for key in parametrs.keys():
+            self.add_parametr(pl_root, key, parametrs[key])
+
+        return pl_root
+
     def add_specie(self, root, id, desc, init):
         sroot = self.add_child(root, 'Species')
         self.add_child(sroot, 'Id', id)
@@ -170,23 +170,23 @@ class ModelPSC:
         sl_root = etree.Element('SpeciesList')
 
         for specie in species:
-            self.add_specie(sl_root, specie, specie, 0.0 if 'free' in specie else 68)
+            self.add_specie(sl_root, specie, specie, 68 if 'free' in specie else 0.0)
 
         for state in states:
             self.add_specie(sl_root, state, state, 0.0 if 'On' in state else 1)
 
         for site in sites:
-            self.add_specie(sl_root, site, site, 1)
+            self.add_specie(sl_root, site, site, 2)
 
         self.add_specie(sl_root, 'mRNA', 'mRNA', 0.0)
         self.add_specie(sl_root, 'Nprotein', 'Nprotein', 0.0)
 
-        return len(species) + len(states) + len(sites) + 2, sl_root
+        return len(states) + len(species) + len(sites) + 2, sl_root
 
 
     def create_model(self):
-        pl_root = self.add_parameters_list()
         species, sites, states, reac_root = self.add_reactions()
+        pl_root = self.add_parameters_list(species, sites, states)
         countSpecies, s_root = self.add_species_list(species, sites, states)
 
         self.add_child(self.model, 'NumberOfReactions', self.reaction_id - 1)
@@ -208,9 +208,9 @@ def prob_tf(file):
 
 tf_prob = prob_tf("sitesDR.ann")
 
-tf_prob = tf_prob[:1]
+tf_prob = tf_prob[:2]
 
-model = ModelPSC(1, tfs, tf_prob)
+model = ModelPSC(2, tfs, tf_prob)
 doc = model.create_model()
 
 

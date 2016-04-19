@@ -7,19 +7,19 @@ from lxml import etree
 tfs = ["hb", "Kr", "gt", "kni", "bcd", "cad", "tll", "hkb"]
 
 
-# def read_tf_prob(file):
-#     tf_prob = []
-#     for line in open(file):
-#         _, _, tf, _, _, prob, = line.split()
-#         tf_prob.append((tfs[int(tf)], float(prob)))
-#     return tf_prob
-
 def read_tf_prob(file):
-    tf_prob = {}
+    tf_prob = []
     for line in open(file):
         site, _, tf, _, _, prob, = line.split()
-        tf_prob[site]  = ( tfs[int(tf)], float(prob))
-    return tf_prob
+        tf_prob.append((tfs[int(tf)], float(prob), site))
+    return list(reversed(sorted(tf_prob, key=lambda tup: tup[1])))
+
+# def read_tf_prob(file):
+#     tf_prob = {}
+#     for line in open(file):
+#         site, _, tf, _, _, prob, = line.split()
+#         tf_prob[site]  = ( tfs[int(tf)], float(prob))
+#     return tf_prob
 
 
 def save_model(doc, out='/../model.xml'):

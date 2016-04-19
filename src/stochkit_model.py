@@ -36,6 +36,10 @@ class ModelStochKit:
                 for isite in range (max (0, site - 10), min(site + 10, len(self.tf_probs))):
                     if isite == site:
                         continue
+
+                    if abs(int(self.tf_probs[site][2]) - int(self.tf_probs[isite][2])) > 10:
+                        continue
+
                     _, _, onState, offState = getVariables(core, self.tf_probs[isite][0], self.tf_probs[isite][2])
                     rate += '* {0}'.format(offState)
                     reactants[offState] = '1'
@@ -69,6 +73,10 @@ class ModelStochKit:
                 for isite in range (max (0, site - 10), min(site + 10, len(self.tf_probs))):
                     if isite == site:
                         continue
+
+                    if abs(int(self.tf_probs[site][2]) - int(self.tf_probs[isite][2])) > 10:
+                        continue
+
                     _, _, onState, offState = getVariables(core, self.tf_probs[isite][0], self.tf_probs[isite][2])
                     products[offState] = '1'
 

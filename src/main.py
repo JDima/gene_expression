@@ -11,7 +11,7 @@ def read_tf_prob(file):
     for line in open(file):
         site, _, tf, _, _, prob, = line.split()
         tf_prob.append((tfs[int(tf)], float(prob), site))
-    return list(reversed(sorted(tf_prob, key=lambda tup: tup[1])))
+    return sorted(tf_prob, key=lambda tup: int(tup[2]))
 
 # def read_tf_prob(file):
 #     tf_prob = {}
@@ -29,13 +29,13 @@ def save_model(doc, out='/../model.xml'):
 
 if __name__ == "__main__":
     tf_prob = read_tf_prob("../sitesDR.ann")
-    ctfs = 10
+    ctfs = 100
     if len(sys.argv) > 1:
         ctfs = sys.argv[1]
 
     tf_prob = tf_prob[:ctfs]
 
-    model = ModelStochKit(10, tfs, tf_prob, 0.002, 10)
+    model = ModelStochKit(3, tfs, tf_prob, 0.002, 10)
     doc = model.create_model()
 
     save_model(doc, 'model.xml')

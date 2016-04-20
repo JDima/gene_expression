@@ -169,15 +169,10 @@ class ModelStochKit:
         return pl_root
 
     def writeHead(self, species, states, rna_protein):
-        f = open('model_output/stats/means.txt', 'r')
         g = open('means_head.txt', 'w')
         repres, activ = getCounts()
         all = ["iter"] + species + [repres] + [activ] + states + rna_protein
-
         g.write('\t'.join(all) + '\n')
-        for line in f.readlines():
-            g.write(line)
-        f.close()
         g.close()
 
     def add_species_list(self, species, states):

@@ -29,13 +29,13 @@ def save_model(doc, out='/../model.xml'):
 
 if __name__ == "__main__":
     tf_prob = read_tf_prob("../sitesDR.ann")
-    ctfs = 100
+    ctfs = 2
     if len(sys.argv) > 1:
         ctfs = sys.argv[1]
 
     tf_prob = tf_prob[:ctfs]
 
-    model = ModelStochKit(3, tfs, tf_prob, 0.002, 10)
+    model = ModelStochKit(2, tfs, tf_prob, 0.002, 10)
     doc = model.create_model()
 
     save_model(doc, 'model.xml')

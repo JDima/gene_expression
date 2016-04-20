@@ -51,6 +51,12 @@ class ModelStochKit:
     def add_unbinding_reactions(self, root):
         species, states = [], []
         repres, activ = getCounts()
+
+        # add Protein
+        for core in range(self.count_core):
+            freeN, _, _, _ = getVariables(core, 'kni', 0)
+            species.append(freeN)
+
         for core in range(self.count_core):
             for site, tf_prob in enumerate(self.tf_probs):
                 freeN, bindedN, onState, offState = getVariables(core, tf_prob[0], tf_prob[2])
@@ -98,8 +104,9 @@ class ModelStochKit:
     def add_translation_reaction(self, root):
         desc = "Translation"
         for core in range(self.count_core):
+            freeN, _, _, _ = getVariables(core, 'kni', 0)
             self.adder.add_reaction(root, desc, 'mRNA' + str(core) + ' * translation',
-                              {'mRNA' + str(core): '1'}, {'Nprotein' + str(core): '1'})
+                              {'mRNA' + str(core): '1'}, {freeN: '1'})
 
     def add_degradation_mRNA_reaction(self, root):
         desc = "Degradation mRNA"
@@ -110,8 +117,9 @@ class ModelStochKit:
     def add_degradation_protein_reaction(self, root):
         desc = "Degradation protein"
         for core in range(self.count_core):
-            self.adder.add_reaction(root, desc, 'Nprotein' + str(core) + ' * Protein_degrad',
-                              {'Nprotein' + str(core): '1'}, {})
+            freeN, _, _, _ = getVariables(core, 'kni', 0)
+            self.adder.add_reaction(root, desc, freeN + ' * Protein_degrad',
+                              {freeN : '1'}, {})
 
     def add_diff_reaction(self, root, desc, fromP, toP):
         dconst = str(self.diffuse / self.h_dist)
@@ -189,19 +197,19 @@ class ModelStochKit:
 
         repres, activ = getCounts()
         self.adder.add_specie(sl_root, repres, repres, 0)
-        self.adder.add_specie(sl_root, activ, activ, 2)
+        self.adder.add_specie(sl_root, activ, activ, 0)
 
         rna_protein = []
 
         for core in range(self.count_core):
             self.adder.add_specie(sl_root, 'mRNA' + str(core), 'mRNA' + str(core), 0.0)
-            self.adder.add_specie(sl_root, 'Nprotein' + str(core), 'Nprotein' + str(core), 0.0)
+            # self.adder.add_specie(sl_root, 'Nprotein' + str(core), 'Nprotein' + str(core), 0.0)
             rna_protein.append('mRNA' + str(core))
-            rna_protein.append('Nprotein' + str(core))
+            # rna_protein.append('Nprotein' + str(core))
 
         self.writeHead(species, states, rna_protein)
 
-        return len(states) + len(species) + 2 + 2 * self.count_core, sl_root
+        return len(states) + len(species) + 2 + self.count_core, sl_root
 
     def create_model(self):
         species, states, reac_root = self.add_reactions()

@@ -1,0 +1,10 @@
+
+cd "result"
+
+for f in $(find . -iname "*.xml")
+  do
+    echo "Currend model: $f"
+    /Users/JDima/Documents/seminars/StochKit2.0.11/tau_leaping -m $f -t 1000 -r 1 -i 1000 --force -p 8 --seed 19
+  done
+
+cd ..

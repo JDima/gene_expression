@@ -94,7 +94,7 @@ class ModelStochKit:
                     _, _, onState, offState = getVariables(core, self.tf_probs[isite][0], self.tf_probs[isite][2])
                     products[offState] = '1'
 
-                self.adder.add_reaction(root, desc, "0.0", reactants, products)
+                self.adder.add_reaction(root, desc, rate, reactants, products)
 
                 if freeN not in species:
                     species.append(freeN)
@@ -106,7 +106,7 @@ class ModelStochKit:
         desc = "Transcription start"
         for core in range(self.count_core):
             repres, activ = getCounts(core)
-            rate = "pow ( 1.3, {0} ) * pow ( 0.7, {1} )".format(activ, repres)
+            rate = "(max ({0} , {1}) / min ({0} + 1, {1} + 1)) * pow ( 1.3, {0} ) * pow ( 0.7, {1} ) * {2}".format(activ, repres, self.trans_start)
             self.adder.add_reaction(root, desc, rate, {}, {'mRNA' + str(core): '1'})
 
     def add_translation_reaction(self, root):

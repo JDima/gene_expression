@@ -5,7 +5,9 @@ from lxml import etree
 
 
 class ModelStochKit:
-    def __init__(self, count_сore, transciption_factors, tf_probs, diffuse, h_dist):
+    def __init__(self, count_сore, transciption_factors, tf_probs,
+                 diffuse, h_dist, trans_start, Protein_degrad,
+                 mRNA_degrad, translation, start_cout_tf):
         self.count_core = count_сore
         self.transcipton_factors = transciption_factors
         self.tf_probs = tf_probs
@@ -16,7 +18,12 @@ class ModelStochKit:
 
         self.diffuse = diffuse
         self.h_dist = h_dist
-        self.trans_start = 0.1
+        self.trans_start = trans_start
+        self.Protein_degrad = Protein_degrad
+        self.mRNA_degrad = mRNA_degrad
+        self.translation = translation
+        self.start_cout_tf = start_cout_tf
+
 
     def add_binding_reactions(self, root):
         for core in range(self.count_core):
@@ -170,7 +177,9 @@ class ModelStochKit:
     def add_parameters_list(self):
         pl_root = etree.Element('ParametersList')
 
-        parametrs = {'translation': 0.2, 'mRNA_degrad': 0.2, 'Protein_degrad': 0.2,
+        parametrs = {'translation': self.translation,
+                     'mRNA_degrad': self.mRNA_degrad,
+                     'Protein_degrad': self.Protein_degrad,
                      'Transcription_start': self.trans_start}
         for key in parametrs.keys():
             self.adder.add_parametr(pl_root, key, parametrs[key])
@@ -194,11 +203,11 @@ class ModelStochKit:
             else:
                 _, _, core, _ = specie.split("_")
                 if "bcd" in specie:
-                    self.adder.add_specie(sl_root, specie, specie, 68 * math.exp(-0.5 * float(core)) if 'free' in specie else 0.0)
+                    self.adder.add_specie(sl_root, specie, specie, self.start_cout_tf * math.exp(-0.5 * float(core)) if 'free' in specie else 0.0)
                 elif "cad" in specie:
-                    self.adder.add_specie(sl_root, specie, specie, 68 * math.sqrt(float(core)) if 'free' in specie else 0.0)
+                    self.adder.add_specie(sl_root, specie, specie, self.start_cout_tf * math.sqrt(float(core)) if 'free' in specie else 0.0)
                 else:
-                    self.adder.add_specie(sl_root, specie, specie, 68 if 'free' in specie else 0.0)
+                    self.adder.add_specie(sl_root, specie, specie, self.start_cout_tf if 'free' in specie else 0.0)
 
         for state in states:
             self.adder.add_specie(sl_root, state, state, 0.0 if 'On' in state else 1)
@@ -212,12 +221,10 @@ class ModelStochKit:
 
             self.adder.add_specie(sl_root, 'mRNA' + str(core), 'mRNA' + str(core), 0.0)
             repres, activ = getCounts(core)
-            # self.adder.add_specie(sl_root, 'Nprotein' + str(core), 'Nprotein' + str(core), 0.0)
 
             rna_protein.append(repres)
             rna_protein.append(activ)
             rna_protein.append('mRNA' + str(core))
-            # rna_protein.append('Nprotein' + str(core))
 
         self.head(species, states, rna_protein)
 

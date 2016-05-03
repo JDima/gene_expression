@@ -1,4 +1,4 @@
-setwd("../src")
+setwd("/Users/JDima/PycharmProjects/gene_expression/src")
 cols <- read.table("means_head.txt", sep = "\t", head = FALSE)
 data <- read.table("model_output/stats/means.txt", sep = "\t", head = FALSE)
 data <- data[, 1:length(cols)]
@@ -93,6 +93,7 @@ df <- getEveryRNANRow(data, 250)
 row <- as.numeric(df[1,])
 plot(row, type = "l", ylab = "RNA", xlab = "Core", xlim = c(1, length(df[1,])), ylim = c(0, max(df)))
 cl <- rainbow(length(df[1,]))
+
 for(i in 2:nrow(df)) {
   row <- as.numeric(df[i,])
   lines(row, type = "l", ylab = "RNA", xlab = "Core",col = cl[i])

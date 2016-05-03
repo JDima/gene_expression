@@ -1,3 +1,4 @@
+import math
 from src.adder import adder
 from src.variable_generator import *
 from lxml import etree
@@ -18,8 +19,8 @@ class ModelStochKit:
         self.trans_start = 0.1
 
     def add_binding_reactions(self, root):
-        repres, activ = getCounts()
         for core in range(self.count_core):
+            repres, activ = getCounts(core)
             for site, tf_prob in enumerate(self.tf_probs):
                 freeN, bindedN, onState, offState = getVariables(core, tf_prob[0], tf_prob[2])
                 desc = "binding_core_{0}_tf_{1}_site_{2}".format(str(core), tf_prob[0], str(tf_prob[2]))
@@ -50,7 +51,6 @@ class ModelStochKit:
 
     def add_unbinding_reactions(self, root):
         species, states = [], []
-        repres, activ = getCounts()
 
         # add Protein
         for core in range(self.count_core):
@@ -58,6 +58,7 @@ class ModelStochKit:
             species.append(freeN)
 
         for core in range(self.count_core):
+            repres, activ = getCounts(core)
             for site, tf_prob in enumerate(self.tf_probs):
                 freeN, bindedN, onState, offState = getVariables(core, tf_prob[0], tf_prob[2])
 
@@ -86,7 +87,7 @@ class ModelStochKit:
                     _, _, onState, offState = getVariables(core, self.tf_probs[isite][0], self.tf_probs[isite][2])
                     products[offState] = '1'
 
-                self.adder.add_reaction(root, desc, rate, reactants, products)
+                self.adder.add_reaction(root, desc, "0.0", reactants, products)
 
                 if freeN not in species:
                     species.append(freeN)
@@ -97,7 +98,7 @@ class ModelStochKit:
     def add_transription_start(self, root):
         desc = "Transcription start"
         for core in range(self.count_core):
-            repres, activ = getCounts()
+            repres, activ = getCounts(core)
             rate = "pow ( 1.3, {0} ) * pow ( 0.7, {1} )".format(activ, repres)
             self.adder.add_reaction(root, desc, rate, {}, {'mRNA' + str(core): '1'})
 
@@ -176,11 +177,12 @@ class ModelStochKit:
 
         return pl_root
 
-    def writeHead(self, species, states, rna_protein):
+    def head(self, species, states, rna_protein):
         g = open('means_head.txt', 'w')
-        repres, activ = getCounts()
-        all = ["iter"] + species + [repres] + [activ] + states + rna_protein
-        g.write('\t'.join(all) + '\n')
+        means_head = ["iter"] + species
+
+        means_head += states + rna_protein
+        g.write('\t'.join(means_head) + '\n')
         g.close()
 
     def add_species_list(self, species, states):
@@ -190,26 +192,36 @@ class ModelStochKit:
             if 'kni' in specie:
                 self.adder.add_specie(sl_root, specie, specie, 0.0)
             else:
-                self.adder.add_specie(sl_root, specie, specie, 68 if 'free' in specie else 0.0)
+                _, _, core, _ = specie.split("_")
+                if "bcd" in specie:
+                    self.adder.add_specie(sl_root, specie, specie, 68 * math.exp(-0.5 * float(core)) if 'free' in specie else 0.0)
+                elif "cad" in specie:
+                    self.adder.add_specie(sl_root, specie, specie, 68 * math.sqrt(float(core)) if 'free' in specie else 0.0)
+                else:
+                    self.adder.add_specie(sl_root, specie, specie, 68 if 'free' in specie else 0.0)
 
         for state in states:
             self.adder.add_specie(sl_root, state, state, 0.0 if 'On' in state else 1)
 
-        repres, activ = getCounts()
-        self.adder.add_specie(sl_root, repres, repres, 0)
-        self.adder.add_specie(sl_root, activ, activ, 0)
-
         rna_protein = []
 
         for core in range(self.count_core):
+            repres, activ = getCounts(core)
+            self.adder.add_specie(sl_root, repres, repres, 0)
+            self.adder.add_specie(sl_root, activ, activ, 0)
+
             self.adder.add_specie(sl_root, 'mRNA' + str(core), 'mRNA' + str(core), 0.0)
+            repres, activ = getCounts(core)
             # self.adder.add_specie(sl_root, 'Nprotein' + str(core), 'Nprotein' + str(core), 0.0)
+
+            rna_protein.append(repres)
+            rna_protein.append(activ)
             rna_protein.append('mRNA' + str(core))
             # rna_protein.append('Nprotein' + str(core))
 
-        self.writeHead(species, states, rna_protein)
+        self.head(species, states, rna_protein)
 
-        return len(states) + len(species) + 2 + self.count_core, sl_root
+        return len(states) + len(species) + 2 * self.count_core + self.count_core, sl_root
 
     def create_model(self):
         species, states, reac_root = self.add_reactions()

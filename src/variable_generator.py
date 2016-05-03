@@ -4,8 +4,8 @@ __author__ = 'JDima'
 def getSite(core, tf, site):
     return "count_repr".format(site, core, tf)
 
-def getCounts():
-    return "crepres", "cactiv"
+def getCounts(core):
+    return "crepres_core_" + str(core), "cactiv_core_" + str(core)
 
 def getBinded(core, tf, site=""):
     return "Nbinded_core_{0}_{1}".format(str(core), tf)

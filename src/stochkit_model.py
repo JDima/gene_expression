@@ -106,7 +106,8 @@ class ModelStochKit:
         desc = "Transcription start"
         for core in range(self.count_core):
             repres, activ = getCounts(core)
-            rate = "(max ({0} , {1}) / min ({0} + 1, {1} + 1)) * pow ( 1.3, {0} ) * pow ( 0.7, {1} ) * {2}".format(activ, repres, self.trans_start)
+            # rate = "(max ({0} , {1}) / max ({0} + 1, {1} + 1)) * pow ( 1.3, {0} ) * pow ( 0.7, {1} ) * {2}".format(activ, repres, self.trans_start)
+            rate = "{2} * pow ( 1.12, {0} ) * pow ( 0.91, {1} )".format(activ, repres, self.trans_start)
             self.adder.add_reaction(root, desc, rate, {}, {'mRNA' + str(core): '1'})
 
     def add_translation_reaction(self, root):

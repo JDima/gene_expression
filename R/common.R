@@ -14,12 +14,14 @@ getNRow <- function(df, nrow)
 
 getTFNRow <- function(df, nrow, tf)
 {
-  return(df[nrow, grep(tf, colnames(df), perl = TRUE )])
+  tmp <- df[nrow, grep(tf, colnames(df), perl = TRUE )]
+  return(tmp[nrow, grep("free", colnames(tmp), perl = TRUE )])
 }
 
 getTfCount <- function(df, tf)
 {
-  return(df[ , grep(tf, colnames(df), perl = TRUE )])
+  tmp <- df[, grep(tf, colnames(df), perl = TRUE )]
+  return(tmp[ , grep("free", colnames(tmp), perl = TRUE )])
 }
 
 getEveryTfNRow<- function(df, n, tf)
@@ -71,12 +73,12 @@ getEveryKniNRow<- function(df, n)
 
 getRNANRow <- function(df, nrow)
 {
-  return(getTFNRow(df, nrow, "mRNA"))
+  return(df[nrow, grep("mRNA", colnames(df), perl = TRUE )])
 }
 
 getRNACount <- function(df)
 {
-  return(getTfCount(df, "mRNA"))
+  return(df[ , grep("mRNA", colnames(df), perl = TRUE )])
 }
 
 getEveryRNANRow<- function(df, n)
@@ -85,4 +87,15 @@ getEveryRNANRow<- function(df, n)
   return(getEveryNRow(rnaCounts, n))
 }
 
+plotSliceEveryRNANRow <- function(data, N)
+{
+  df <- getEveryRNANRow(data, 250)
+  row <- as.numeric(df[1,])
+  plot(row, type = "l", ylab = "Сoncentration", xlab = "Core", xlim = c(1, length(df[1,])), ylim = c(0, max(df)), main = "mRNA")
+  cl <- rainbow(length(df[1,]))
+  for(i in 2:nrow(df)) {
+    row <- as.numeric(df[i,])
+    lines(row, type = "l", ylab = "Сoncentration", xlab = "Core",col = cl[i])
+  }
+}
 # END mRNA

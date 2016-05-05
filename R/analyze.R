@@ -3,11 +3,14 @@ source("common.R")
 
 setwd("/Users/JDima/PycharmProjects/gene_expression/src")
 
-data <- readData("means_head.txt", "model_output/stats/means.txt")
+data <- readData("model_output/stats/means.txt", "means_head.txt")
 
-plot.ts(getEveryKniNRow(data, 25))
+
+plot.ts(getEveryKniNRow(data, 25), y = 1:40 * 25)
+plot.ts(getEveryRNANRow(data, 25), y = 1:40 * 25)
 
 plotSliceEveryTfNRow(data, 250, "kni")
+plotSliceEveryRNANRow(data, 250)
 
 
 df <- as.numeric(getKniNRow(data, 500))

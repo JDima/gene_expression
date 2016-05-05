@@ -12,7 +12,7 @@ def read_tf_prob(file):
     return sorted(tf_prob, key=lambda tup: int(tup[2]))
 
 
-def save_model(doc, out='/../model.xml'):
+def save_model(doc, out='/../model100.xml'):
     f = open(out, 'wb')
     f.write(etree.tostring(doc, pretty_print=True))
     f.close()

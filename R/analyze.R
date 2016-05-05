@@ -1,3 +1,4 @@
+setwd("~/PycharmProjects/gene_expression/R")
 source("common.R")
 
 setwd("/Users/JDima/PycharmProjects/gene_expression/src")

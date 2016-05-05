@@ -41,7 +41,7 @@ class ModelStochKit:
                     products = {bindedN: '1', repres: '1', onState: '1'}
 
 
-                for isite in range (max (0, site - 10), min(site + 10, len(self.tf_probs))):
+                for isite in range (max (0, site - 2), min(site + 10, len(self.tf_probs))):
                     if isite == site:
                         continue
 

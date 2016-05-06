@@ -6,7 +6,7 @@ from lxml import etree
 
 class ModelStochKit:
     def __init__(self, count_сore, transciption_factors, tf_probs,
-                 diffuse, h_dist, trans_start, Protein_degrad,
+                 diffuse, trans_start, protein_degrad,
                  mRNA_degrad, translation, start_cout_tf):
         self.count_core = count_сore
         self.transcipton_factors = transciption_factors
@@ -17,9 +17,8 @@ class ModelStochKit:
         self.adder.add_child(self.model, 'Description', 'Gene expression')
 
         self.diffuse = diffuse
-        self.h_dist = h_dist
         self.trans_start = trans_start
-        self.Protein_degrad = Protein_degrad
+        self.protein_degrad = protein_degrad
         self.mRNA_degrad = mRNA_degrad
         self.translation = translation
         self.start_cout_tf = start_cout_tf
@@ -104,10 +103,17 @@ class ModelStochKit:
 
     def add_transription_start(self, root):
         desc = "Transcription start"
+
+        lms = [( 2.6451, 0.1018), (42.4384, 0.2243), (44.9793, 0.3061),
+               (62.2495, 0.2987), (71.6075, 0.2969), (70.8039, 0.3484),
+               (71.310 , 0.409 ), (83.2934, 0.3955), (52.8813, 0.5326),
+               (100.4554, 0.3574)]
+
         for core in range(self.count_core):
             repres, activ = getCounts(core)
+            a, b = lms[core]
             # rate = "(max ({0} , {1}) / max ({0} + 1, {1} + 1)) * pow ( 1.3, {0} ) * pow ( 0.7, {1} ) * {2}".format(activ, repres, self.trans_start)
-            rate = "{2} * pow ( 1.12, {0} ) * pow ( 0.91, {1} )".format(activ, repres, self.trans_start)
+            rate = "{2} * pow ( 1.2, {0} ) * pow ( 0.915, {1} * {3} + {4})".format(activ, repres, self.trans_start, b, a)
             self.adder.add_reaction(root, desc, rate, {}, {'mRNA' + str(core): '1'})
 
     def add_translation_reaction(self, root):
@@ -127,11 +133,11 @@ class ModelStochKit:
         desc = "Degradation protein"
         for core in range(self.count_core):
             freeN, _, _, _ = getVariables(core, 'kni', 0)
-            self.adder.add_reaction(root, desc, freeN + ' * Protein_degrad',
+            self.adder.add_reaction(root, desc, freeN + ' * protein_degrad',
                               {freeN : '1'}, {})
 
     def add_diff_reaction(self, root, desc, fromP, toP):
-        dconst = str(self.diffuse / self.h_dist)
+        dconst = str(self.diffuse)
         self.adder.add_reaction(root,
                           desc, dconst + ' * max(' + fromP + ' - ' + toP + ', 0.0 )',
                           {fromP: '1'}, {toP: '1'})
@@ -180,7 +186,7 @@ class ModelStochKit:
 
         parametrs = {'translation': self.translation,
                      'mRNA_degrad': self.mRNA_degrad,
-                     'Protein_degrad': self.Protein_degrad,
+                     'Protein_degrad': self.protein_degrad,
                      'Transcription_start': self.trans_start}
         for key in parametrs.keys():
             self.adder.add_parametr(pl_root, key, parametrs[key])

@@ -3,6 +3,16 @@ from src.adder import adder
 from src.variable_generator import *
 from lxml import etree
 
+tf_count = {
+    "bcd": [ 27.407, 21.598, 16.408, 12.328, 9.036, 7.160, 5.754, 3.495, 1.596, 0.160],
+    "cad": [ 22.903, 29.267, 40.315, 49.829, 52.643, 53.950, 56.071, 66.993, 79.425, 56.242],
+    "tll": [1.738, 0.669, 1.113, 1.000, 0.944, 1.356, 1.251, 2.976, 22.632, 99.587],
+    "hkb": [7.476, 7.567, 7.735, 8.101, 7.519, 6.138, 5.543, 4.688, 6.486, 16.806],
+    "hb": [164.428, 154.157, 25.905, 3.606, 0.785, 0.009, -0.002, 30.725, 111.775, 74.768],
+    "Kr": [16.052, 131.507, 200.316, 177.865, 77.429, 10.447, 1.579, 0.394, 0.483, 0.000],
+    "gt": [50.155, 2.280, 1.393, 0.660, 0.028, 18.754, 156.540, 75.497, 8.498, 0.880]
+}
+
 
 class ModelStochKit:
     def __init__(self, count_сore, transciption_factors, tf_probs,
@@ -104,16 +114,10 @@ class ModelStochKit:
     def add_transription_start(self, root):
         desc = "Transcription start"
 
-        lms = [( 2.6451, 0.1018), (42.4384, 0.2243), (44.9793, 0.3061),
-               (62.2495, 0.2987), (71.6075, 0.2969), (70.8039, 0.3484),
-               (71.310 , 0.409 ), (83.2934, 0.3955), (52.8813, 0.5326),
-               (100.4554, 0.3574)]
-
         for core in range(self.count_core):
             repres, activ = getCounts(core)
-            a, b = lms[core]
             # rate = "(max ({0} , {1}) / max ({0} + 1, {1} + 1)) * pow ( 1.3, {0} ) * pow ( 0.7, {1} ) * {2}".format(activ, repres, self.trans_start)
-            rate = "{2} * pow ( 1.2, {0} ) * pow ( 0.915, {1} * {3} + {4})".format(activ, repres, self.trans_start, b, a)
+            rate = "{2} * pow ( 1.2, {0} ) * pow ( 0.915, {1})".format(activ, repres, self.trans_start)
             self.adder.add_reaction(root, desc, rate, {}, {'mRNA' + str(core): '1'})
 
     def add_translation_reaction(self, root):
@@ -186,12 +190,24 @@ class ModelStochKit:
 
         parametrs = {'translation': self.translation,
                      'mRNA_degrad': self.mRNA_degrad,
-                     'Protein_degrad': self.protein_degrad,
+                     'protein_degrad': self.protein_degrad,
                      'Transcription_start': self.trans_start}
         for key in parametrs.keys():
             self.adder.add_parametr(pl_root, key, parametrs[key])
 
         return pl_root
+
+    def getIndex(self, patterns, titles):
+        inds = []
+        for ind, title in enumerate(titles):
+            for pattern in patterns:
+                if pattern in title:
+                    continue
+                else:
+                    break
+            else:
+                inds.append(ind)
+        return inds
 
     def head(self, species, states, rna_protein):
         g = open('means_head.txt', 'w')
@@ -201,20 +217,24 @@ class ModelStochKit:
         g.write('\t'.join(means_head) + '\n')
         g.close()
 
+        kni_indexes = self.getIndex(["Nfree", "kni"], means_head)
+        self.kni_indexes = kni_indexes
+
+        rna_indexes = self.getIndex(["mRNA"], means_head)
+        self.rna_indexes = rna_indexes
+
+
     def add_species_list(self, species, states):
         sl_root = etree.Element('SpeciesList')
 
         for specie in species:
-            if 'kni' in specie:
+            _, _, core, tf = specie.split("_")
+            if tf == 'kni':
                 self.adder.add_specie(sl_root, specie, specie, 0.0)
             else:
-                _, _, core, _ = specie.split("_")
-                if "bcd" in specie:
-                    self.adder.add_specie(sl_root, specie, specie, self.start_cout_tf * math.exp(-0.5 * float(core)) if 'free' in specie else 0.0)
-                elif "cad" in specie:
-                    self.adder.add_specie(sl_root, specie, specie, self.start_cout_tf * math.sqrt(float(core)) if 'free' in specie else 0.0)
-                else:
-                    self.adder.add_specie(sl_root, specie, specie, self.start_cout_tf if 'free' in specie else 0.0)
+                _, _, core, tf = specie.split("_")
+                self.adder.add_specie(sl_root, specie, specie, int(tf_count[tf][int(core)]) if 'free' in specie else 0.0)
+
 
         for state in states:
             self.adder.add_specie(sl_root, state, state, 0.0 if 'On' in state else 1)

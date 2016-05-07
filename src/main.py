@@ -39,8 +39,8 @@ if __name__ == "__main__":
     (options, args) = initParserCommandLine()
 
     tf_prob = read_tf_prob("../sitesDR.ann")
-    # tf_prob = tf_prob[:options.sites]
-    tf_prob = tf_prob[:10]
+    tf_prob = tf_prob[:options.sites]
+    # tf_prob = tf_prob[:10]
 
     model = ModelStochKit(count_сore=options.cores, transciption_factors=tfs, tf_probs=tf_prob,
                           diffuse = options.diffuse, trans_start = options.trans_start,

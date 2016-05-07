@@ -36,9 +36,9 @@ def initParserCommandLine():
                   help="**REQUIRED Number of realizations")
 
     parser.add_option("-i", "--intervals", default = "1000", dest="intervals",
-                  help="Number of intervals.")
+                  help="Number of intervals")
 
     parser.add_option("-b", "--bases", default = [1.3, 0.9] * 10, dest="bases",
-                  action="append", help="Parametr for transcription start.")
+                  action="append", help="Array of parametrs for transcription start (activ, repres, activ, ..). ")
 
     return parser.parse_args()

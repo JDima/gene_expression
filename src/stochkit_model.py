@@ -17,7 +17,7 @@ tf_count = {
 class ModelStochKit:
     def __init__(self, count_сore, transciption_factors, tf_probs,
                  diffuse, trans_start, protein_degrad,
-                 mRNA_degrad, translation, start_cout_tf):
+                 mRNA_degrad, translation, bases):
         self.count_core = count_сore
         self.transcipton_factors = transciption_factors
         self.tf_probs = tf_probs
@@ -31,7 +31,7 @@ class ModelStochKit:
         self.protein_degrad = protein_degrad
         self.mRNA_degrad = mRNA_degrad
         self.translation = translation
-        self.start_cout_tf = start_cout_tf
+        self.bases = bases
 
 
     def add_binding_reactions(self, root):
@@ -116,8 +116,10 @@ class ModelStochKit:
 
         for core in range(self.count_core):
             repres, activ = getCounts(core)
+            abase = self.bases[2 * core]
+            rbase = self.bases[2 * core + 1]
             # rate = "(max ({0} , {1}) / max ({0} + 1, {1} + 1)) * pow ( 1.3, {0} ) * pow ( 0.7, {1} ) * {2}".format(activ, repres, self.trans_start)
-            rate = "{2} * pow ( 1.2, {0} ) * pow ( 0.915, {1})".format(activ, repres, self.trans_start)
+            rate = "{2} * pow ( {3}, {0} ) * pow ( {4}, {1})".format(activ, repres, self.trans_start, abase, rbase)
             self.adder.add_reaction(root, desc, rate, {}, {'mRNA' + str(core): '1'})
 
     def add_translation_reaction(self, root):

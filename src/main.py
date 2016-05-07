@@ -45,7 +45,7 @@ if __name__ == "__main__":
     model = ModelStochKit(count_сore=options.cores, transciption_factors=tfs, tf_probs=tf_prob,
                           diffuse = options.diffuse, trans_start = options.trans_start,
                           protein_degrad = options.kni_degrad, mRNA_degrad = options.mrna_degrad,
-                          translation = options.translation, start_cout_tf = 68)
+                          translation = options.translation, bases = options.bases)
 
     doc = model.create_model()
 

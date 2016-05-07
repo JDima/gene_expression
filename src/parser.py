@@ -37,4 +37,8 @@ def initParserCommandLine():
 
     parser.add_option("-i", "--intervals", default = "1000", dest="intervals",
                   help="Number of intervals.")
+
+    parser.add_option("-b", "--bases", default = [1.3, 0.9] * 10, dest="bases",
+                  action="append", help="Parametr for transcription start.")
+
     return parser.parse_args()
